@@ -1,6 +1,11 @@
 package bedrock
 
 import (
+	"BedrockC/config"
+	"BedrockC/logger"
+	"BedrockC/utils"
+	"github.com/PuerkitoBio/goquery"
+	"github.com/pkg/errors"
 	"net/http"
 	"os"
 	"os/exec"
@@ -8,11 +13,6 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
-	"github.com/pkg/errors"
-	"github.com/PuerkitoBio/goquery"
-	"BedrockC/logger"
-	"BedrockC/config"
-	"BedrockC/utils"
 )
 
 const (
@@ -24,10 +24,13 @@ type bedrockHelper struct {
 	bedrockVersions []string
 }
 
-func InitBedrockServer(executable string) (error, bedrockS) {
-	return nil, bedrockS{}
+func InitBedrockServer(executable string) (error, BedrockS) {
+	temp := BedrockS{}
+	temp.path = filepath.Dir(executable)
+	temp.executable = executable
+	return nil, temp
 }
-func (b *bedrockHelper) InitByVersion(version string) bedrockS {
+func (b *bedrockHelper) InitByVersion(version string) BedrockS {
 	var temp string
 	if version == "latest" {
 		var versions [][]int
@@ -64,7 +67,7 @@ func (b *bedrockHelper) InitByVersion(version string) bedrockS {
 	err, bs := InitBedrockServer(filepath.Join(b.bedrockPath, temp, "bedrock"))
 	if err != nil {
 		logger.DefaultLogger().Error(err, "无法启动实例", "bedrockHelper")
-		return bedrockS{}
+		return BedrockS{}
 	}
 	return bs
 }
