@@ -19,7 +19,7 @@ func onCommandResponseGot(msg string){
 
 }
 func isWouldToSendMsg() bool{
-
+	return true
 }
 func addSubscription(eventName string){
 
@@ -28,7 +28,7 @@ func removeSubscription(eventName string){
 
 }
 func commandRequest(command string){
-	
+
 }
 
 func onMessageIn(msg string){

@@ -4,8 +4,6 @@ import (
 	"BedrockC/config"
 	"BedrockC/logger"
 	"BedrockC/utils"
-	"github.com/PuerkitoBio/goquery"
-	"github.com/pkg/errors"
 	"net/http"
 	"os"
 	"os/exec"
@@ -13,13 +11,16 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
+
+	"github.com/PuerkitoBio/goquery"
+	"github.com/pkg/errors"
 )
 
 const (
 	bedrockDownloadWebsite = "https://www.minecraft.net/en-us/download/server/bedrock"
 )
 
-type bedrockHelper struct {
+type BedrockHelper struct {
 	bedrockPath     string //用于放置bedrock各版本的路径
 	bedrockVersions []string
 }
@@ -30,7 +31,7 @@ func InitBedrockServer(executable string) (error, BedrockS) {
 	temp.executable = executable
 	return nil, temp
 }
-func (b *bedrockHelper) InitByVersion(version string) BedrockS {
+func (b *BedrockHelper) InitByVersion(version string) BedrockS {
 	var temp string
 	if version == "latest" {
 		var versions [][]int
@@ -73,7 +74,7 @@ func (b *bedrockHelper) InitByVersion(version string) BedrockS {
 }
 
 //从官方下载最新的游戏
-func (b *bedrockHelper) UpdateGame(path string) error {
+func (b *BedrockHelper) UpdateGame(path string) error {
 	link := GetLatestLink()
 	re := regexp.MustCompile(`bedrock-server-([0-9]+\.[0-9]+\.[0-9]+\.[0-9]+)\.zip`)
 	version := re.FindStringSubmatch(link)[1]
@@ -109,17 +110,17 @@ func GetLatestLink() string {
 	var downloadPath string
 	req, err := http.NewRequest(http.MethodGet, bedrockDownloadWebsite, nil)
 	if err != nil {
-		errors.Wrap(err, "访问Bedrock Server官方网页失败")
+		panic(errors.Wrap(err, "访问Bedrock Server官方网页失败"))
 	}
 	req.Header.Set("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/80.0.3987.149 Safari/537.36")
 	resp, err := client.Do(req)
-	if err != nil {
-		errors.Wrap(err, "访问Bedrock Server官方网页失败")
+	if err != nil || resp.StatusCode != 200 {
+		panic(errors.Wrap(err, "访问Bedrock Server官方网页失败"))
 	}
 	defer resp.Body.Close()
 	doc, err := goquery.NewDocumentFromReader(resp.Body)
 	if err != nil {
-		errors.Wrap(err, "无法解析网页数据")
+		panic(errors.Wrap(err, "无法解析网页数据"))
 	}
 	//找到一个a标签，data-platform="serverBedrockWindows"，内容是Download
 	doc.Find("a").Each(func(i int, s *goquery.Selection) {
@@ -131,11 +132,13 @@ func GetLatestLink() string {
 }
 
 //在最后的时候调用，用于保存配置
-func (b *bedrockHelper) UpdateConfig(c *config.Config) {
+func (b *BedrockHelper) UpdateConfig(c *config.Config) {
 	c.Set("bedrockPath", b.bedrockPath)
 	c.Set("bedrockServers", b.bedrockVersions)
 }
-func (b *bedrockHelper) Init(c *config.Config) error {
+
+//用于初始化， 设置初始值，如果是第一次使用，则会自动下载
+func (b *BedrockHelper) Init(c *config.Config) error {
 	b.bedrockPath = c.Require("bedrockPath", "./BDS").(string)
 	b.bedrockVersions = c.Require("bedrockServers", []string{}).([]string)
 	if len(b.bedrockVersions) == 0 {
@@ -144,6 +147,8 @@ func (b *bedrockHelper) Init(c *config.Config) error {
 		if err != nil {
 			return errors.Wrap(err, "无法删除bedrock目录")
 		}
+		//下载
+		b.UpdateGame(b.bedrockPath)
 	} else {
 		//防止下载到一半，删除bedrockPath下没有记录的文件夹
 		for _, v := range b.bedrockVersions {

@@ -1,10 +1,12 @@
 package config
-import (
-	"gopkg.in/yaml.v2"
-	"io/ioutil"
-	"github.com/pkg/errors"
 
-  )
+import (
+	"io/ioutil"
+	"os"
+
+	"github.com/pkg/errors"
+	"gopkg.in/yaml.v2"
+)
 const ConfigPath = "./config.yaml"
 
 
@@ -15,6 +17,15 @@ type Config struct {
 func NewConfig() (*Config, error) {
 	c := &Config{}
 	c.values = make(map[string]interface{})
+	c.ConfigFile = ConfigPath
+	//如果配置文件不存在，则创建配置文件
+	if _, err := os.Stat(c.ConfigFile); os.IsNotExist(err) {
+		err := c.Save()
+		if err != nil {
+			return nil, errors.Wrap(err, "failed to save config")
+		}
+	}
+	
 	return c, nil
 }
 func (c *Config) Load() error {
