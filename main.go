@@ -1,16 +1,13 @@
-package bedrockc
+package main
+
 
 import (
-	"github.com/gin-gonic/gin"
-	"github.com/gorilla/websocket"
-	"github.com/pkg/errors"
+	"BedrockC/routes"
+
+	
 )
 func main(){
-	HttpServer:=gin.Default()
-	HttpServer.GET("/",func(c *gin.Context){
-		c.JSON(200,gin.H{
-			"message":"pong",
-		})
-	})
-	HttpServer.Run(":4398")
+	Server:=routes.SetupRoutes()
+	//gin.SetMode(gin.ReleaseMode)
+	Server.Run(":4398")
 }
